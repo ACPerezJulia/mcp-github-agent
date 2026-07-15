@@ -1,0 +1,21 @@
+# Dependencias
+node_modules/
+
+# Build output
+dist/
+
+# Variables de entorno (el PAT de GitHub vive acá, nunca se commitea)
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Coverage de tests
+coverage/
