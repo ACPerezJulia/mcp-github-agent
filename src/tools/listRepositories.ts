@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { listRepositoriesSchema } from "../schemas/listRepositories.js";
 import { listRepositories } from "../github/operations.js";
+import { toToolErrorResult } from "../errors/index.js";
 
 export function registerListRepositoriesTool(server: McpServer) {
   server.registerTool(
@@ -12,11 +13,15 @@ export function registerListRepositoriesTool(server: McpServer) {
       inputSchema: listRepositoriesSchema,
     },
     async ({ visibility }) => {
-      const repos = await listRepositories({ visibility });
-      const text =
-        repos.map((repo) => repo.full_name).join("\n") ||
-        "No se encontraron repositorios.";
-      return { content: [{ type: "text", text }] };
+      try {
+        const repos = await listRepositories({ visibility });
+        const text =
+          repos.map((repo) => repo.full_name).join("\n") ||
+          "No se encontraron repositorios.";
+        return { content: [{ type: "text", text }] };
+      } catch (error) {
+        return toToolErrorResult(error);
+      }
     }
   );
 }

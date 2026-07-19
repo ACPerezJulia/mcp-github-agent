@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createCommitSchema } from "../schemas/createCommit.js";
 import { createCommit } from "../github/operations.js";
+import { toToolErrorResult } from "../errors/index.js";
 
 export function registerCreateCommitTool(server: McpServer) {
   server.registerTool(
@@ -12,23 +13,27 @@ export function registerCreateCommitTool(server: McpServer) {
       inputSchema: createCommitSchema,
     },
     async ({ owner, repo, path, content, message, branch, sha }) => {
-      const result = await createCommit({
-        owner,
-        repo,
-        path,
-        content,
-        message,
-        branch,
-        sha,
-      });
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Commit creado: ${result.commit.html_url}`,
-          },
-        ],
-      };
+      try {
+        const result = await createCommit({
+          owner,
+          repo,
+          path,
+          content,
+          message,
+          branch,
+          sha,
+        });
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Commit creado: ${result.commit.html_url}`,
+            },
+          ],
+        };
+      } catch (error) {
+        return toToolErrorResult(error);
+      }
     }
   );
 }

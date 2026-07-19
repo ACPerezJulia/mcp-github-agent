@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { listIssuesSchema } from "../schemas/listIssues.js";
 import { listIssues } from "../github/operations.js";
+import { toToolErrorResult } from "../errors/index.js";
 
 export function registerListIssuesTool(server: McpServer) {
   server.registerTool(
@@ -12,12 +13,16 @@ export function registerListIssuesTool(server: McpServer) {
       inputSchema: listIssuesSchema,
     },
     async ({ owner, repo, state, labels }) => {
-      const issues = await listIssues({ owner, repo, state, labels });
-      const text =
-        issues
-          .map((issue) => `#${issue.number} [${issue.state}] ${issue.title}`)
-          .join("\n") || "No se encontraron issues.";
-      return { content: [{ type: "text", text }] };
+      try {
+        const issues = await listIssues({ owner, repo, state, labels });
+        const text =
+          issues
+            .map((issue) => `#${issue.number} [${issue.state}] ${issue.title}`)
+            .join("\n") || "No se encontraron issues.";
+        return { content: [{ type: "text", text }] };
+      } catch (error) {
+        return toToolErrorResult(error);
+      }
     }
   );
 }
