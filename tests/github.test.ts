@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockListForAuthenticatedUser, mockCreateForAuthenticatedUser } =
-  vi.hoisted(() => ({
-    mockListForAuthenticatedUser: vi.fn(),
-    mockCreateForAuthenticatedUser: vi.fn(),
-  }));
+const {
+  mockListForAuthenticatedUser,
+  mockCreateForAuthenticatedUser,
+  mockIssuesUpdate,
+} = vi.hoisted(() => ({
+  mockListForAuthenticatedUser: vi.fn(),
+  mockCreateForAuthenticatedUser: vi.fn(),
+  mockIssuesUpdate: vi.fn(),
+}));
 
 vi.mock("../src/github/client.js", () => ({
   octokit: {
@@ -13,11 +17,14 @@ vi.mock("../src/github/client.js", () => ({
         listForAuthenticatedUser: mockListForAuthenticatedUser,
         createForAuthenticatedUser: mockCreateForAuthenticatedUser,
       },
+      issues: {
+        update: mockIssuesUpdate,
+      },
     },
   },
 }));
 
-const { listRepositories, createRepository } = await import(
+const { listRepositories, createRepository, closeIssue } = await import(
   "../src/github/operations.js"
 );
 const { GitHubAPIError } = await import("../src/errors/index.js");
@@ -25,6 +32,7 @@ const { GitHubAPIError } = await import("../src/errors/index.js");
 beforeEach(() => {
   mockListForAuthenticatedUser.mockReset();
   mockCreateForAuthenticatedUser.mockReset();
+  mockIssuesUpdate.mockReset();
 });
 
 describe("listRepositories", () => {
@@ -70,5 +78,27 @@ describe("createRepository", () => {
       private: true,
     });
     expect(repo.html_url).toBe("https://github.com/octocat/mi-repo");
+  });
+});
+
+describe("closeIssue", () => {
+  it("llama a issues.update con state 'closed' y el issue_number correcto", async () => {
+    mockIssuesUpdate.mockResolvedValueOnce({
+      data: { number: 7, html_url: "https://github.com/octocat/hello/issues/7", state: "closed" },
+    });
+
+    const issue = await closeIssue({
+      owner: "octocat",
+      repo: "hello",
+      issueNumber: 7,
+    });
+
+    expect(mockIssuesUpdate).toHaveBeenCalledWith({
+      owner: "octocat",
+      repo: "hello",
+      issue_number: 7,
+      state: "closed",
+    });
+    expect(issue.state).toBe("closed");
   });
 });
