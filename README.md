@@ -62,9 +62,9 @@ npm install
 
 1. Andá a GitHub → `Settings → Developer settings → Personal access tokens → Tokens (classic)` → `Generate new token`.
 2. Marcá los siguientes scopes:
-   - **`repo`**: necesario para `list_repositories`, `create_repository`, `create_issue`, `list_issues` y `create_commit` (leer y escribir repositorios, issues y contenido de archivos).
+   - **`repo`**: necesario para los 8 tools que operan sobre repositorios (leer/escribir repos, issues, ramas, contenido de archivos y pull requests).
    - **`user`**: necesario para operar como el usuario autenticado (por ejemplo, `create_repository` lo crea bajo tu usuario).
-   - **`admin:org`**: no lo usa ninguno de los tools actuales del MVP — se deja documentado porque el enunciado original lo pedía para posibles operaciones a nivel organización, pero si vas a usar este token solo con los tools de este repo, no es estrictamente necesario.
+   - **`admin:org`**: no lo usa ninguno de los 9 tools de este repo — se deja documentado porque el enunciado original lo pedía para posibles operaciones a nivel organización, pero si vas a usar este token solo con los tools de este repo, no es estrictamente necesario.
 3. Copiá el token generado (no lo vas a poder ver de nuevo).
 
 ### 2. Configurar el `.env`
@@ -105,7 +105,7 @@ Antigravity ejecuta este servidor como subproceso vía `command`/`args` en su ar
    }
    ```
 
-3. Guardá el archivo. En el panel de MCP Servers de Antigravity, `github-agent` debería aparecer conectado, exponiendo 6 tools.
+3. Guardá el archivo. En el panel de MCP Servers de Antigravity, `github-agent` debería aparecer conectado, exponiendo 9 tools.
 
 > Importante: Antigravity ejecuta el `.js` ya compilado, no el `.ts` fuente. Corré `npm run build` después de cada cambio, y **reconectá el servidor** desde el panel de MCP Servers de Antigravity para que tome el código nuevo (el proceso viejo sigue corriendo con el código anterior hasta que lo reiniciás).
 
@@ -191,6 +191,62 @@ Crea o actualiza un archivo en un repositorio mediante un commit directo sobre u
 
 **Ejemplo de prompt:** `"creá un archivo docs/notas.md en mi repo mcp-agent-test-demo con el contenido 'primera nota' y el mensaje de commit 'docs: agregar notas'"`
 
+### `create_branch`
+
+Crea una nueva rama a partir de otra rama base.
+
+| Parámetro    | Tipo   | Obligatorio | Descripción                                                          |
+| ------------ | ------ | :---------: | ----------------------------------------------------------------------- |
+| `owner`      | string | Sí          | Usuario u organización dueño del repo                                   |
+| `repo`       | string | Sí          | Nombre del repositorio                                                  |
+| `branchName` | string | Sí          | Nombre de la nueva rama (formato de referencia de git válido)          |
+| `baseBranch` | string | No          | Rama base. Si se omite, se usa la rama por defecto del repositorio      |
+
+**Ejemplo de prompt:** `"creá una rama llamada 'feature/nueva-funcionalidad' en mi repo mcp-agent-test-demo"`
+
+### `create_pull_request`
+
+Crea un pull request entre dos ramas.
+
+| Parámetro | Tipo   | Obligatorio | Descripción                                    |
+| --------- | ------ | :---------: | ------------------------------------------------ |
+| `owner`   | string | Sí          | Usuario u organización dueño del repo            |
+| `repo`    | string | Sí          | Nombre del repositorio                           |
+| `title`   | string | Sí          | Título del PR (máx. 256 caracteres)              |
+| `head`    | string | Sí          | Rama origen (con los cambios)                    |
+| `base`    | string | Sí          | Rama destino (ej: `main`)                        |
+| `body`    | string | No          | Descripción en Markdown                          |
+
+**Ejemplo de prompt:** `"abrí un pull request desde 'feature/nueva-funcionalidad' hacia 'main' en mcp-agent-test-demo"`
+
+### `close_issue`
+
+Cierra un issue existente.
+
+| Parámetro     | Tipo   | Obligatorio | Descripción                        |
+| ------------- | ------ | :---------: | ------------------------------------- |
+| `owner`       | string | Sí          | Usuario u organización dueño del repo |
+| `repo`        | string | Sí          | Nombre del repositorio                |
+| `issueNumber` | number | Sí          | Número del issue a cerrar             |
+
+**Ejemplo de prompt:** `"cerrá el issue #1 de mcp-agent-test-demo"`
+
+## Flujo de demo sugerido
+
+Los tools están pensados para encadenarse en un flujo real de trabajo, de punta a punta:
+
+```
+create_repository → create_issue → create_branch → create_commit → create_pull_request → close_issue
+```
+
+Ejemplo de secuencia de prompts:
+1. `"creá un repositorio privado llamado 'demo-flujo'"`
+2. `"creá un issue en ese repo que diga 'agregar sección de instalación al README'"`
+3. `"creá una rama 'docs/instalacion' en ese repo"`
+4. `"en esa rama, creá el archivo README.md con instrucciones de instalación"`
+5. `"abrí un pull request desde 'docs/instalacion' hacia 'main'"`
+6. `"cerrá el issue que abriste antes"`
+
 ## Manejo de errores
 
 Los errores de la API de GitHub se traducen a mensajes en lenguaje natural (nunca se expone un stack trace al LLM):
@@ -210,7 +266,7 @@ Los errores de la API de GitHub se traducen a mensajes en lenguaje natural (nunc
 npm test
 ```
 
-15 tests con Vitest cubriendo schemas, operaciones (Octokit mockeado) y transformación de errores. Los tests **nunca** llaman a la API real de GitHub.
+20 tests con Vitest cubriendo schemas, operaciones (Octokit mockeado) y transformación de errores. Los tests **nunca** llaman a la API real de GitHub.
 
 ## Troubleshooting
 
