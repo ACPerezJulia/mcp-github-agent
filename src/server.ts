@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { registerListRepositoriesTool } from "./tools/listRepositories.js";
 
 const server = new McpServer({
   name: "mcp-github-agent",
@@ -19,6 +20,8 @@ server.registerTool(
     };
   }
 );
+
+registerListRepositoriesTool(server);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
