@@ -256,7 +256,8 @@ Los errores de la API de GitHub se traducen a mensajes en lenguaje natural (nunc
 | Token inválido o vencido (401)      | `AuthenticationError`  | "El token de GitHub no es válido o expiró. Revisá el archivo .env."          |
 | Falta de permisos (403, sin rate limit) | `AuthenticationError` | "GitHub rechazó la operación por falta de permisos..."                  |
 | Recurso no encontrado (404)         | `GitHubAPIError`       | "El repositorio o recurso solicitado no fue encontrado..."                  |
-| Datos inválidos (422)                | `GitHubAPIError`       | Detalle específico devuelto por GitHub                                     |
+| Archivo existente sin `sha` en `create_commit` (422) | `GitHubAPIError` | "El archivo que intentás commitear ya existe... hace falta indicar su sha actual" |
+| Otros datos inválidos (422)          | `GitHubAPIError`       | Detalle específico devuelto por GitHub                                     |
 | Rate limit (403/429)                 | —                       | Se reintenta automáticamente con backoff exponencial antes de fallar        |
 | Sin conexión a internet              | `NetworkError`         | "No se pudo conectar con GitHub. Verificá tu conexión..."                   |
 
@@ -266,7 +267,7 @@ Los errores de la API de GitHub se traducen a mensajes en lenguaje natural (nunc
 npm test
 ```
 
-20 tests con Vitest cubriendo schemas, operaciones (Octokit mockeado) y transformación de errores. Los tests **nunca** llaman a la API real de GitHub.
+22 tests con Vitest cubriendo schemas, operaciones (Octokit mockeado) y transformación de errores. Los tests **nunca** llaman a la API real de GitHub.
 
 ## Troubleshooting
 
