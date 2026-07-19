@@ -365,13 +365,13 @@ npm test
 MIT
 
 ```
-Copyright (c) 2026 Ana Pérez Julia
+Copyright (c) 2026 Analía C. Pérez Juliá
 ```
 
 ---
 
 ## 👩‍💻 Autora
 
-**Ana Pérez Julia**
+**Analía C. Pérez Juliá**
 Bootcamp Soy Henry · Proyecto Integrador Módulo 5 (Backend)
 GitHub: [@ACPerezJulia](https://github.com/ACPerezJulia)
