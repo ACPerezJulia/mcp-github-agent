@@ -5,6 +5,9 @@ import { registerCreateRepositoryTool } from "./tools/createRepository.js";
 import { registerCreateIssueTool } from "./tools/createIssue.js";
 import { registerListIssuesTool } from "./tools/listIssues.js";
 import { registerCreateCommitTool } from "./tools/createCommit.js";
+import { registerCreateBranchTool } from "./tools/createBranch.js";
+import { registerCreatePullRequestTool } from "./tools/createPullRequest.js";
+import { registerCloseIssueTool } from "./tools/closeIssue.js";
 
 const server = new McpServer({
   name: "mcp-github-agent",
@@ -30,6 +33,9 @@ registerCreateRepositoryTool(server);
 registerCreateIssueTool(server);
 registerListIssuesTool(server);
 registerCreateCommitTool(server);
+registerCreateBranchTool(server);
+registerCreatePullRequestTool(server);
+registerCloseIssueTool(server);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

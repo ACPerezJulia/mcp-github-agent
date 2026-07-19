@@ -5,6 +5,9 @@ import { createRepositorySchema } from "../schemas/createRepository.js";
 import { createIssueSchema } from "../schemas/createIssue.js";
 import { listIssuesSchema } from "../schemas/listIssues.js";
 import { createCommitSchema } from "../schemas/createCommit.js";
+import { createBranchSchema } from "../schemas/createBranch.js";
+import { createPullRequestSchema } from "../schemas/createPullRequest.js";
+import { closeIssueSchema } from "../schemas/closeIssue.js";
 import { translateGitHubError } from "../errors/index.js";
 import { withRetry } from "../utils/retry.js";
 import { logger } from "../utils/logging.js";
@@ -23,6 +26,15 @@ type ListIssuesParams = z.infer<typeof listIssuesObject>;
 
 const createCommitObject = z.object(createCommitSchema);
 type CreateCommitParams = z.infer<typeof createCommitObject>;
+
+const createBranchObject = z.object(createBranchSchema);
+type CreateBranchParams = z.infer<typeof createBranchObject>;
+
+const createPullRequestObject = z.object(createPullRequestSchema);
+type CreatePullRequestParams = z.infer<typeof createPullRequestObject>;
+
+const closeIssueObject = z.object(closeIssueSchema);
+type CloseIssueParams = z.infer<typeof closeIssueObject>;
 
 /**
  * Ejecuta una llamada a Octokit con reintentos por rate limit, y traduce
@@ -94,6 +106,59 @@ export async function createCommit(params: CreateCommitParams) {
       content: Buffer.from(params.content, "utf-8").toString("base64"),
       branch: params.branch,
       sha: params.sha,
+    });
+    return data;
+  });
+}
+
+export async function createBranch(params: CreateBranchParams) {
+  return runGitHubOperation(async () => {
+    const baseBranch =
+      params.baseBranch ??
+      (
+        await octokit.rest.repos.get({
+          owner: params.owner,
+          repo: params.repo,
+        })
+      ).data.default_branch;
+
+    const { data: baseRef } = await octokit.rest.git.getRef({
+      owner: params.owner,
+      repo: params.repo,
+      ref: `heads/${baseBranch}`,
+    });
+
+    const { data } = await octokit.rest.git.createRef({
+      owner: params.owner,
+      repo: params.repo,
+      ref: `refs/heads/${params.branchName}`,
+      sha: baseRef.object.sha,
+    });
+    return data;
+  });
+}
+
+export async function createPullRequest(params: CreatePullRequestParams) {
+  return runGitHubOperation(async () => {
+    const { data } = await octokit.rest.pulls.create({
+      owner: params.owner,
+      repo: params.repo,
+      title: params.title,
+      head: params.head,
+      base: params.base,
+      body: params.body,
+    });
+    return data;
+  });
+}
+
+export async function closeIssue(params: CloseIssueParams) {
+  return runGitHubOperation(async () => {
+    const { data } = await octokit.rest.issues.update({
+      owner: params.owner,
+      repo: params.repo,
+      issue_number: params.issueNumber,
+      state: "closed",
     });
     return data;
   });
