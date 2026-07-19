@@ -71,6 +71,12 @@ export function translateGitHubError(error: unknown): Error {
         404
       );
     case 422:
+      if (/sha/i.test(error.message)) {
+        return new GitHubAPIError(
+          "El archivo que intentás commitear ya existe en el repositorio. Para actualizar un archivo existente hace falta indicar su sha actual (parámetro 'sha' del tool create_commit) — si es un archivo nuevo, no debería hacer falta.",
+          422
+        );
+      }
       return new GitHubAPIError(
         `GitHub rechazó los datos enviados: ${error.message}`,
         422

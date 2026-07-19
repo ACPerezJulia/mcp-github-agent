@@ -20,6 +20,25 @@ describe("translateGitHubError", () => {
     expect(error.message).toContain("no fue encontrado");
   });
 
+  it("convierte un 422 por sha faltante en un mensaje específico, no el genérico de GitHub", () => {
+    const error = translateGitHubError({
+      status: 422,
+      message: 'Invalid request.\n\n"sha" wasn\'t supplied.',
+    });
+    expect(error).toBeInstanceOf(GitHubAPIError);
+    expect(error.message).toContain("sha");
+    expect(error.message).toContain("ya existe en el repositorio");
+  });
+
+  it("convierte otro 422 (no relacionado a sha) reenviando el mensaje de GitHub", () => {
+    const error = translateGitHubError({
+      status: 422,
+      message: "Repository creation failed.",
+    });
+    expect(error).toBeInstanceOf(GitHubAPIError);
+    expect(error.message).toContain("Repository creation failed");
+  });
+
   it("convierte un error sin status (falla de red) en NetworkError", () => {
     const error = translateGitHubError(new TypeError("fetch failed"));
     expect(error).toBeInstanceOf(NetworkError);
