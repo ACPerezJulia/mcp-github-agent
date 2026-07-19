@@ -42,15 +42,19 @@ Todo esto encadenado en una sola conversación: el LLM decide qué tool usar y e
 
 ## 🏗️ Arquitectura
 
-```
-Antigravity (HOST)
-    ↓ gestiona la sesión y conecta los componentes
-LLM — Gemini (CLIENT)
-    ↓ lee la descripción de los tools, decide cuál invocar y con qué parámetros
-MCP Server — este repo (SERVER)
-    ↓ expone tools, valida inputs con Zod, ejecuta operaciones
-GitHub API (vía Octokit)
-    ↓ recibe llamadas autenticadas y devuelve resultados
+```mermaid
+flowchart TD
+    A["🖥️ Antigravity — HOST<br/>gestiona la sesión y conecta los componentes"]
+    B["🤖 Gemini — CLIENT<br/>lee la descripción de los tools,<br/>decide cuál invocar y con qué parámetros"]
+    C["⚙️ mcp-github-agent — SERVER<br/>expone tools, valida inputs con Zod,<br/>ejecuta operaciones"]
+    D["☁️ GitHub API<br/>vía Octokit"]
+
+    A -->|"stdio (JSON-RPC)"| B
+    B -->|"stdio (JSON-RPC)"| C
+    C -->|"HTTPS (REST)"| D
+    D -.->|"resultado"| C
+    C -.->|"content / isError"| B
+    B -.->|"respuesta en lenguaje natural"| A
 ```
 
 La comunicación entre Antigravity y este servidor es vía **stdio** (JSON-RPC sobre `stdin`/`stdout`), no HTTP — el Host lanza el servidor como subproceso local, sin necesidad de puerto ni red.
