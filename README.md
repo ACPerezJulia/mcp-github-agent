@@ -98,7 +98,7 @@ node --version
 ## 🚀 Instalación
 
 ```bash
-git clone <url-del-repo>
+git clone https://github.com/ACPerezJulia/mcp-github-agent.git
 cd mcp-github-agent
 npm install
 ```
