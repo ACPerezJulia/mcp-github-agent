@@ -1,15 +1,46 @@
-# mcp-github-agent
+# 🐙 mcp-github-agent
 
-Servidor MCP (Model Context Protocol) en Node.js + TypeScript que expone tools para automatizar operaciones sobre GitHub, pensado para ser consumido por un Host (Antigravity) y un LLM cliente (Gemini).
+> Servidor **MCP (Model Context Protocol)** en Node.js + TypeScript que conecta un LLM directamente con la API de GitHub. Permite crear repositorios, ramas, commits, issues y pull requests a partir de instrucciones en lenguaje natural.
 
-## Casos de uso
+Pensado para ser consumido por un Host (**Antigravity**) y un LLM cliente (**Gemini**).
 
-- Listar y crear repositorios sin salir del chat con el asistente
-- Crear y consultar issues de un proyecto usando lenguaje natural
-- Commitear archivos (crear o actualizar) directamente sobre una rama
-- Automatizar tareas repetitivas de gestión de GitHub (triage de issues, alta de repos nuevos, etc.) delegándolas a un LLM que decide qué operación ejecutar según el pedido del usuario
+---
 
-## Arquitectura
+## 📋 Tabla de contenidos
+
+- [💡 Casos de uso](#-casos-de-uso)
+- [🏗️ Arquitectura](#️-arquitectura)
+- [📦 Requisitos](#-requisitos)
+- [🚀 Instalación](#-instalación)
+- [⚙️ Configuración](#️-configuración)
+- [🔌 Configuración de Antigravity](#-configuración-de-antigravity)
+- [📜 Scripts disponibles](#-scripts-disponibles)
+- [🛠️ Tools disponibles](#️-tools-disponibles)
+- [🔗 Flujo de demo sugerido](#-flujo-de-demo-sugerido)
+- [⚠️ Manejo de errores](#️-manejo-de-errores)
+- [🧪 Testing](#-testing)
+- [🔧 Troubleshooting](#-troubleshooting)
+- [📄 Licencia](#-licencia)
+- [👩‍💻 Autora](#-autora)
+
+---
+
+## 💡 Casos de uso
+
+| Escenario | Sin `mcp-github-agent` | Con `mcp-github-agent` |
+|---|---|---|
+| Crear un repositorio | Ir a GitHub, llenar el formulario de "New repository" | *"Creá un repo privado llamado 'mi-proyecto'"* |
+| Reportar un bug | Navegar al repo, abrir un issue, completar el formulario | *"Abrí un issue que diga 'Error 500 en /login'"* |
+| Empezar una feature | `git checkout -b feature/nueva` a mano | *"Creá la rama 'feature/nueva' a partir de main"* |
+| Subir un cambio | `git add`, `git commit`, `git push` manual | *"Commiteá este archivo en la rama X con el mensaje Y"* |
+| Pedir un code review | Abrir el PR manualmente en la UI de GitHub | *"Abrí un pull request de 'feature/nueva' hacia main"* |
+| Cerrar un issue resuelto | Ir al issue, apretar "Close" | *"Cerrá el issue #12"* |
+
+Todo esto encadenado en una sola conversación: el LLM decide qué tool usar y en qué orden, según el pedido en lenguaje natural — no hace falta indicarle paso a paso qué operación ejecutar.
+
+---
+
+## 🏗️ Arquitectura
 
 ```
 Antigravity (HOST)
@@ -22,9 +53,9 @@ GitHub API (vía Octokit)
     ↓ recibe llamadas autenticadas y devuelve resultados
 ```
 
-La comunicación entre Antigravity y este servidor es vía **stdio** (JSON-RPC sobre `stdin`/`stdout`), no HTTP.
+La comunicación entre Antigravity y este servidor es vía **stdio** (JSON-RPC sobre `stdin`/`stdout`), no HTTP — el Host lanza el servidor como subproceso local, sin necesidad de puerto ni red.
 
-### Estructura del código
+### 📂 Estructura del código
 
 ```
 src/
@@ -42,13 +73,25 @@ src/
 tests/            → tests con Vitest, Octokit siempre mockeado
 ```
 
-## Requisitos
+---
 
-- Node.js 18 o superior
-- Una cuenta de GitHub con un [Personal Access Token](https://github.com/settings/tokens)
-- [Antigravity](https://antigravity.google/) instalado (Host que conecta el LLM con este servidor)
+## 📦 Requisitos
 
-## Instalación
+| Requisito | Versión mínima | Notas |
+|---|---|---|
+| **Node.js** | 18.x | probado en 20.x |
+| **npm** | incluido con Node | — |
+| **Cuenta de GitHub** | cualquier plan | con permisos para generar un [Personal Access Token](https://github.com/settings/tokens) |
+| **Antigravity** | — | Host que conecta el LLM (Gemini) con este servidor |
+
+Verificá tu versión de Node con:
+```bash
+node --version
+```
+
+---
+
+## 🚀 Instalación
 
 ```bash
 git clone <url-del-repo>
@@ -56,15 +99,23 @@ cd mcp-github-agent
 npm install
 ```
 
-## Configuración
+---
+
+## ⚙️ Configuración
 
 ### 1. Generar el Personal Access Token (PAT)
 
 1. Andá a GitHub → `Settings → Developer settings → Personal access tokens → Tokens (classic)` → `Generate new token`.
 2. Marcá los siguientes scopes:
-   - **`repo`**: necesario para los 8 tools que operan sobre repositorios (leer/escribir repos, issues, ramas, contenido de archivos y pull requests).
-   - **`user`**: necesario para operar como el usuario autenticado (por ejemplo, `create_repository` lo crea bajo tu usuario).
-   - **`admin:org`**: no lo usa ninguno de los 9 tools de este repo — se deja documentado porque el enunciado original lo pedía para posibles operaciones a nivel organización, pero si vas a usar este token solo con los tools de este repo, no es estrictamente necesario.
+
+   | Scope | ¿Para qué se usa? |
+   |---|---|
+   | `repo` | Necesario para los 8 tools que operan sobre repositorios (leer/escribir repos, issues, ramas, contenido de archivos y pull requests) |
+   | `user` | Necesario para operar como el usuario autenticado (ej: `create_repository` lo crea bajo tu usuario) |
+   | `admin:org` | No lo usa ninguno de los 9 tools de este repo — se deja documentado porque el enunciado original lo pedía para posibles operaciones a nivel organización |
+
+   > **Mínimo recomendado:** `repo` + `user`
+
 3. Copiá el token generado (no lo vas a poder ver de nuevo).
 
 ### 2. Configurar el `.env`
@@ -75,11 +126,13 @@ cp .env.example .env
 
 Pegá el token en `.env`:
 
-```
+```env
 GITHUB_TOKEN=ghp_tu_token_aca
 ```
 
-**El archivo `.env` nunca se commitea** (está en `.gitignore`).
+> ⚠️ **El archivo `.env` nunca se commitea** (está en `.gitignore`).
+
+> 🔒 **Detalle de seguridad:** `client.ts` resuelve la ruta al `.env` de forma absoluta, calculada desde la ubicación del propio archivo (no desde el directorio de trabajo del proceso que lo ejecuta). Esto significa que funciona sin importar quién lo lance ni desde dónde — no hace falta exponer ni copiar el token en ningún archivo de configuración de Antigravity.
 
 ### 3. Compilar
 
@@ -87,7 +140,17 @@ GITHUB_TOKEN=ghp_tu_token_aca
 npm run build
 ```
 
-## Configuración de Antigravity
+### 4. Verificar la instalación
+
+```bash
+npm start
+```
+
+El proceso queda esperando mensajes por `stdin` (comportamiento esperado de un servidor stdio) — si no tira ningún error y queda "colgado" ahí, la instalación fue exitosa. Cortalo con `Ctrl+C`.
+
+---
+
+## 🔌 Configuración de Antigravity
 
 Antigravity ejecuta este servidor como subproceso vía `command`/`args` en su archivo de configuración de MCP servers.
 
@@ -107,131 +170,139 @@ Antigravity ejecuta este servidor como subproceso vía `command`/`args` en su ar
 
 3. Guardá el archivo. En el panel de MCP Servers de Antigravity, `github-agent` debería aparecer conectado, exponiendo 9 tools.
 
-> Importante: Antigravity ejecuta el `.js` ya compilado, no el `.ts` fuente. Corré `npm run build` después de cada cambio, y **reconectá el servidor** desde el panel de MCP Servers de Antigravity para que tome el código nuevo (el proceso viejo sigue corriendo con el código anterior hasta que lo reiniciás).
+> 💡 **Tip para desarrollo:** si preferís no recompilar cada vez que cambiás algo, podés apuntar `command`/`args` a `npx` + `tsx` + `src/server.ts` en vez de `node` + `dist/server.js` — corre el TypeScript directo. Para la versión "de producción" que se usa en la demo, mejor el `.js` ya compilado.
 
-## Scripts disponibles
+> ⚠️ Antigravity ejecuta el `.js` ya compilado, no el `.ts` fuente. Corré `npm run build` después de cada cambio, y **reconectá el servidor** desde el panel de MCP Servers de Antigravity para que tome el código nuevo (el proceso viejo sigue corriendo con el código anterior hasta que lo reiniciás).
 
-| Script          | Qué hace                                                             |
-| --------------- | --------------------------------------------------------------------- |
-| `npm run build` | Compila TypeScript (`src/`) a JavaScript (`dist/`)                    |
-| `npm run dev`   | Corre el servidor en modo desarrollo con recarga automática (`tsx`)   |
-| `npm start`     | Corre el servidor ya compilado (`dist/server.js`)                     |
-| `npm test`      | Corre la suite de tests con Vitest                                    |
+---
 
-## Tools disponibles
+## 📜 Scripts disponibles
 
-### `ping`
+| Script | Qué hace |
+|---|---|
+| `npm run build` | Compila TypeScript (`src/`) a JavaScript (`dist/`) |
+| `npm run dev` | Corre el servidor en modo desarrollo con recarga automática (`tsx`) |
+| `npm start` | Corre el servidor ya compilado (`dist/server.js`) |
+| `npm test` | Corre la suite de tests con Vitest |
+
+---
+
+## 🛠️ Tools disponibles
+
+### 🏓 `ping`
 
 Tool trivial sin parámetros que responde `pong`. Sirve para verificar que el servidor está vivo y que el pipeline Antigravity → Gemini → MCP Server está funcionando de punta a punta.
 
 **Ejemplo de prompt:** `"usá la tool ping para verificar la conexión"`
 
-### `list_repositories`
+### 📋 `list_repositories`
 
 Lista los repositorios del usuario autenticado.
 
-| Parámetro    | Tipo   | Obligatorio | Descripción                                              |
-| ------------ | ------ | :---------: | --------------------------------------------------------- |
-| `visibility` | enum   | No (default `all`) | `all`, `public` o `private`                        |
+| Parámetro | Tipo | Obligatorio | Descripción |
+|---|---|:---:|---|
+| `visibility` | enum | No (default `all`) | `all`, `public` o `private` |
 
 **Ejemplo de prompt:** `"listame mis repositorios privados de GitHub"`
 
-### `create_repository`
+### ➕ `create_repository`
 
 Crea un nuevo repositorio bajo el usuario autenticado.
 
-| Parámetro     | Tipo    | Obligatorio | Descripción                                                        |
-| ------------- | ------- | :---------: | ------------------------------------------------------------------- |
-| `name`        | string  | Sí          | 1-100 caracteres, solo letras/números/`.`/`-`/`_`, no puede terminar en `.git` ni `.wiki` |
-| `description` | string  | No          | Descripción breve del repositorio                                  |
-| `private`     | boolean | No (default `false`) | Si es `true`, el repo se crea privado                    |
+| Parámetro | Tipo | Obligatorio | Descripción |
+|---|---|:---:|---|
+| `name` | string | Sí | 1-100 caracteres, solo letras/números/`.`/`-`/`_`, no puede terminar en `.git` ni `.wiki` |
+| `description` | string | No | Descripción breve del repositorio |
+| `private` | boolean | No (default `false`) | Si es `true`, el repo se crea privado |
 
 **Ejemplo de prompt:** `"creá un repositorio privado llamado 'mi-proyecto' con la descripción 'proyecto de prueba'"`
 
-### `create_issue`
+### 🐛 `create_issue`
 
 Crea un issue en un repositorio existente.
 
-| Parámetro | Tipo     | Obligatorio | Descripción                                    |
-| --------- | -------- | :---------: | ------------------------------------------------ |
-| `owner`   | string   | Sí          | Usuario u organización dueño del repo            |
-| `repo`    | string   | Sí          | Nombre del repositorio                           |
-| `title`   | string   | Sí          | Título del issue (máx. 256 caracteres)           |
-| `body`    | string   | No          | Descripción en Markdown (máx. 65536 caracteres)  |
-| `labels`  | string[] | No          | Labels a asignar                                 |
+| Parámetro | Tipo | Obligatorio | Descripción |
+|---|---|:---:|---|
+| `owner` | string | Sí | Usuario u organización dueño del repo |
+| `repo` | string | Sí | Nombre del repositorio |
+| `title` | string | Sí | Título del issue (máx. 256 caracteres) |
+| `body` | string | No | Descripción en Markdown (máx. 65536 caracteres) |
+| `labels` | string[] | No | Labels a asignar |
 
 **Ejemplo de prompt:** `"creá un issue en ACPerezJulia/mcp-github-agent que diga 'agregar validación extra' con el label 'enhancement'"`
 
-### `list_issues`
+### 📃 `list_issues`
 
 Lista los issues de un repositorio.
 
-| Parámetro | Tipo     | Obligatorio | Descripción                                        |
-| --------- | -------- | :---------: | ----------------------------------------------------- |
-| `owner`   | string   | Sí          | Usuario u organización dueño del repo                |
-| `repo`    | string   | Sí          | Nombre del repositorio                               |
-| `state`   | enum     | No (default `open`) | `open`, `closed` o `all`                     |
-| `labels`  | string[] | No          | Filtra issues que tengan estos labels                |
+| Parámetro | Tipo | Obligatorio | Descripción |
+|---|---|:---:|---|
+| `owner` | string | Sí | Usuario u organización dueño del repo |
+| `repo` | string | Sí | Nombre del repositorio |
+| `state` | enum | No (default `open`) | `open`, `closed` o `all` |
+| `labels` | string[] | No | Filtra issues que tengan estos labels |
 
 **Ejemplo de prompt:** `"mostrame los issues cerrados del repo mcp-github-agent"`
 
-### `create_commit`
+### 📝 `create_commit`
 
 Crea o actualiza un archivo en un repositorio mediante un commit directo sobre una rama (usa la Contents API de GitHub).
 
-| Parámetro | Tipo   | Obligatorio | Descripción                                                              |
-| --------- | ------ | :---------: | --------------------------------------------------------------------------- |
-| `owner`   | string | Sí          | Usuario u organización dueño del repo                                       |
-| `repo`    | string | Sí          | Nombre del repositorio                                                      |
-| `path`    | string | Sí          | Ruta del archivo dentro del repo (sin `/` inicial)                          |
-| `content` | string | Sí          | Contenido en texto plano (el servidor lo codifica a base64 automáticamente) |
-| `message` | string | Sí          | Mensaje del commit                                                          |
-| `branch`  | string | No          | Rama destino (por defecto, la rama principal del repo)                     |
-| `sha`     | string | No          | SHA del archivo existente — **obligatorio solo si estás actualizando un archivo que ya existe** |
+| Parámetro | Tipo | Obligatorio | Descripción |
+|---|---|:---:|---|
+| `owner` | string | Sí | Usuario u organización dueño del repo |
+| `repo` | string | Sí | Nombre del repositorio |
+| `path` | string | Sí | Ruta del archivo dentro del repo (sin `/` inicial) |
+| `content` | string | Sí | Contenido en texto plano (el servidor lo codifica a base64 automáticamente) |
+| `message` | string | Sí | Mensaje del commit |
+| `branch` | string | No | Rama destino (por defecto, la rama principal del repo) |
+| `sha` | string | No | SHA del archivo existente — **obligatorio solo si estás actualizando un archivo que ya existe** |
 
 **Ejemplo de prompt:** `"creá un archivo docs/notas.md en mi repo mcp-agent-test-demo con el contenido 'primera nota' y el mensaje de commit 'docs: agregar notas'"`
 
-### `create_branch`
+### 🌿 `create_branch`
 
 Crea una nueva rama a partir de otra rama base.
 
-| Parámetro    | Tipo   | Obligatorio | Descripción                                                          |
-| ------------ | ------ | :---------: | ----------------------------------------------------------------------- |
-| `owner`      | string | Sí          | Usuario u organización dueño del repo                                   |
-| `repo`       | string | Sí          | Nombre del repositorio                                                  |
-| `branchName` | string | Sí          | Nombre de la nueva rama (formato de referencia de git válido)          |
-| `baseBranch` | string | No          | Rama base. Si se omite, se usa la rama por defecto del repositorio      |
+| Parámetro | Tipo | Obligatorio | Descripción |
+|---|---|:---:|---|
+| `owner` | string | Sí | Usuario u organización dueño del repo |
+| `repo` | string | Sí | Nombre del repositorio |
+| `branchName` | string | Sí | Nombre de la nueva rama (formato de referencia de git válido) |
+| `baseBranch` | string | No | Rama base. Si se omite, se usa la rama por defecto del repositorio |
 
 **Ejemplo de prompt:** `"creá una rama llamada 'feature/nueva-funcionalidad' en mi repo mcp-agent-test-demo"`
 
-### `create_pull_request`
+### 🔀 `create_pull_request`
 
 Crea un pull request entre dos ramas.
 
-| Parámetro | Tipo   | Obligatorio | Descripción                                    |
-| --------- | ------ | :---------: | ------------------------------------------------ |
-| `owner`   | string | Sí          | Usuario u organización dueño del repo            |
-| `repo`    | string | Sí          | Nombre del repositorio                           |
-| `title`   | string | Sí          | Título del PR (máx. 256 caracteres)              |
-| `head`    | string | Sí          | Rama origen (con los cambios)                    |
-| `base`    | string | Sí          | Rama destino (ej: `main`)                        |
-| `body`    | string | No          | Descripción en Markdown                          |
+| Parámetro | Tipo | Obligatorio | Descripción |
+|---|---|:---:|---|
+| `owner` | string | Sí | Usuario u organización dueño del repo |
+| `repo` | string | Sí | Nombre del repositorio |
+| `title` | string | Sí | Título del PR (máx. 256 caracteres) |
+| `head` | string | Sí | Rama origen (con los cambios) |
+| `base` | string | Sí | Rama destino (ej: `main`) |
+| `body` | string | No | Descripción en Markdown |
 
 **Ejemplo de prompt:** `"abrí un pull request desde 'feature/nueva-funcionalidad' hacia 'main' en mcp-agent-test-demo"`
 
-### `close_issue`
+### ✅ `close_issue`
 
 Cierra un issue existente.
 
-| Parámetro     | Tipo   | Obligatorio | Descripción                        |
-| ------------- | ------ | :---------: | ------------------------------------- |
-| `owner`       | string | Sí          | Usuario u organización dueño del repo |
-| `repo`        | string | Sí          | Nombre del repositorio                |
-| `issueNumber` | number | Sí          | Número del issue a cerrar             |
+| Parámetro | Tipo | Obligatorio | Descripción |
+|---|---|:---:|---|
+| `owner` | string | Sí | Usuario u organización dueño del repo |
+| `repo` | string | Sí | Nombre del repositorio |
+| `issueNumber` | number | Sí | Número del issue a cerrar |
 
 **Ejemplo de prompt:** `"cerrá el issue #1 de mcp-agent-test-demo"`
 
-## Flujo de demo sugerido
+---
+
+## 🔗 Flujo de demo sugerido
 
 Los tools están pensados para encadenarse en un flujo real de trabajo, de punta a punta:
 
@@ -247,21 +318,25 @@ Ejemplo de secuencia de prompts:
 5. `"abrí un pull request desde 'docs/instalacion' hacia 'main'"`
 6. `"cerrá el issue que abriste antes"`
 
-## Manejo de errores
+---
+
+## ⚠️ Manejo de errores
 
 Los errores de la API de GitHub se traducen a mensajes en lenguaje natural (nunca se expone un stack trace al LLM):
 
-| Situación                          | Tipo de error         | Ejemplo de mensaje                                                        |
-| ----------------------------------- | ---------------------- | --------------------------------------------------------------------------- |
-| Token inválido o vencido (401)      | `AuthenticationError`  | "El token de GitHub no es válido o expiró. Revisá el archivo .env."          |
-| Falta de permisos (403, sin rate limit) | `AuthenticationError` | "GitHub rechazó la operación por falta de permisos..."                  |
-| Recurso no encontrado (404)         | `GitHubAPIError`       | "El repositorio o recurso solicitado no fue encontrado..."                  |
+| Situación | Tipo de error | Ejemplo de mensaje |
+|---|---|---|
+| Token inválido o vencido (401) | `AuthenticationError` | "El token de GitHub no es válido o expiró. Revisá el archivo .env." |
+| Falta de permisos (403, sin rate limit) | `AuthenticationError` | "GitHub rechazó la operación por falta de permisos..." |
+| Recurso no encontrado (404) | `GitHubAPIError` | "El repositorio o recurso solicitado no fue encontrado..." |
 | Archivo existente sin `sha` en `create_commit` (422) | `GitHubAPIError` | "El archivo que intentás commitear ya existe... hace falta indicar su sha actual" |
-| Otros datos inválidos (422)          | `GitHubAPIError`       | Detalle específico devuelto por GitHub                                     |
-| Rate limit (403/429)                 | —                       | Se reintenta automáticamente con backoff exponencial antes de fallar        |
-| Sin conexión a internet              | `NetworkError`         | "No se pudo conectar con GitHub. Verificá tu conexión..."                   |
+| Otros datos inválidos (422) | `GitHubAPIError` | Detalle específico devuelto por GitHub |
+| Rate limit (403/429) | — | Se reintenta automáticamente con backoff exponencial antes de fallar |
+| Sin conexión a internet | `NetworkError` | "No se pudo conectar con GitHub. Verificá tu conexión..." |
 
-## Testing
+---
+
+## 🧪 Testing
 
 ```bash
 npm test
@@ -269,7 +344,9 @@ npm test
 
 22 tests con Vitest cubriendo schemas, operaciones (Octokit mockeado) y transformación de errores. Los tests **nunca** llaman a la API real de GitHub.
 
-## Troubleshooting
+---
+
+## 🔧 Troubleshooting
 
 **"GITHUB_TOKEN no está definido"** al arrancar el server → revisá que `.env` exista en la raíz del proyecto y tenga la variable `GITHUB_TOKEN` cargada.
 
@@ -281,6 +358,20 @@ npm test
 
 **Error 404 en `create_issue`, `list_issues` o `create_commit`** → verificá que `owner`/`repo` estén bien escritos y que el token tenga acceso a ese repositorio.
 
-## Licencia
+---
+
+## 📄 Licencia
 
 MIT
+
+```
+Copyright (c) 2026 Ana Pérez Julia
+```
+
+---
+
+## 👩‍💻 Autora
+
+**Ana Pérez Julia**
+Bootcamp Soy Henry · Proyecto Integrador Módulo 5 (Backend)
+GitHub: [@ACPerezJulia](https://github.com/ACPerezJulia)
