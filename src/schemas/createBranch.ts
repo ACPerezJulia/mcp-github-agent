@@ -20,6 +20,7 @@ export const createBranchSchema = {
         !name.startsWith(".") &&
         !name.startsWith("/") &&
         !name.endsWith("/") &&
+        !name.endsWith(".") &&
         !name.endsWith(".lock") &&
         !name.includes("..") &&
         !name.includes("//"),

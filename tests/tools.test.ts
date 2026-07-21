@@ -84,6 +84,15 @@ describe("createBranchSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rechaza nombres de rama que terminan en punto", () => {
+    const result = branchSchema.safeParse({
+      owner: "octocat",
+      repo: "hello",
+      branchName: "docs.",
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("closeIssueSchema", () => {
