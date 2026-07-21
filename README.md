@@ -20,8 +20,9 @@ Pensado para ser consumido por un Host (**Antigravity**) y un LLM cliente (**Gem
 - [⚠️ Manejo de errores](#️-manejo-de-errores)
 - [🧪 Testing](#-testing)
 - [🔧 Troubleshooting](#-troubleshooting)
+- [📘 Manual técnico](./MANUAL_TECNICO.md)
 - [📄 Licencia](#-licencia)
-- [👩‍💻 Autora](#-autora)
+- [👩‍💻 Desarrolladora](#-desarrolladora)
 
 ---
 
@@ -362,19 +363,17 @@ npm test
 
 **Error 404 en `create_issue`, `list_issues` o `create_commit`** → verificá que `owner`/`repo` estén bien escritos y que el token tenga acceso a ese repositorio.
 
+> 📘 ¿Vas a modificar o mantener este proyecto? [`MANUAL_TECNICO.md`](./MANUAL_TECNICO.md) tiene el registro de incidentes reales encontrados durante el desarrollo (causa raíz, diagnóstico, solución, commit) y una guía paso a paso de cómo agregar un tool nuevo.
+
 ---
 
 ## 📄 Licencia
 
-MIT
-
-```
-Copyright (c) 2026 Analía C. Pérez Juliá
-```
+MIT © 2026 Halina87
 
 ---
 
-## 👩‍💻 Autora
+## 👩‍💻 Desarrolladora
 
 **Analía C. Pérez Juliá**
 Bootcamp Soy Henry · Proyecto Integrador Módulo 5 (Backend)
