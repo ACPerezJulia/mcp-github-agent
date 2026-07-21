@@ -98,7 +98,9 @@ export function registerCloseIssueTool(server: McpServer) {   // 👈 se llama U
 registerCloseIssueTool(server);   // 👈 literalmente todo lo que hace falta para que el tool exista y funcione
 ```
 
-**Resumen del flujo:** schema (valida y documenta) → operación (habla con Octokit) → tool (conecta eso con el protocolo MCP) → una línea en `server.ts` (lo registra). Los otros 8 tools siguen exactamente el mismo patrón — solo cambian los datos y el endpoint de Octokit.
+**Resumen del flujo:** schema (valida y documenta) → operación (habla con Octokit) → tool (conecta eso con el protocolo MCP) → una línea en `server.ts` (lo registra). Los otros 7 tools que hablan con GitHub siguen exactamente el mismo patrón — solo cambian los datos y el endpoint de Octokit.
+
+**La excepción: `ping`.** No sigue este patrón porque no tiene nada que validar (no recibe parámetros) ni ninguna API externa que llamar — por eso no tiene schema propio ni función en `operations.ts`, y se registra directo e inline en `server.ts` (sin pasar por `src/tools/`). Con `ping` + los 7 con este patrón + `close_issue` como ejemplo, suman los 9 tools totales del servidor.
 
 ---
 
