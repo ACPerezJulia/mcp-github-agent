@@ -336,7 +336,8 @@ Los errores de la API de GitHub se traducen a mensajes en lenguaje natural (nunc
 | Recurso no encontrado (404) | `GitHubAPIError` | "El repositorio o recurso solicitado no fue encontrado..." |
 | Archivo existente sin `sha` en `create_commit` (422) | `GitHubAPIError` | "El archivo que intentás commitear ya existe... hace falta indicar su sha actual" |
 | Otros datos inválidos (422) | `GitHubAPIError` | Detalle específico devuelto por GitHub |
-| Rate limit (403/429) | — | Se reintenta automáticamente con backoff exponencial antes de fallar |
+| Rate limit (403/429), durante los reintentos | — | Se reintenta automáticamente con backoff exponencial |
+| Rate limit (403/429), reintentos agotados | `GitHubAPIError` | "GitHub limitó la cantidad de pedidos (rate limit) y se agotaron los reintentos automáticos..." |
 | Sin conexión a internet | `NetworkError` | "No se pudo conectar con GitHub. Verificá tu conexión..." |
 
 ---
@@ -347,7 +348,7 @@ Los errores de la API de GitHub se traducen a mensajes en lenguaje natural (nunc
 npm test
 ```
 
-22 tests con Vitest cubriendo schemas, operaciones (Octokit mockeado) y transformación de errores. Los tests **nunca** llaman a la API real de GitHub.
+25 tests con Vitest cubriendo schemas, operaciones (Octokit mockeado) y transformación de errores. Los tests **nunca** llaman a la API real de GitHub.
 
 ---
 
