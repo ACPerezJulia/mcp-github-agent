@@ -98,7 +98,7 @@ export function registerCloseIssueTool(server: McpServer) {   // 👈 se llama U
 registerCloseIssueTool(server);   // 👈 literalmente todo lo que hace falta para que el tool exista y funcione
 ```
 
-**El dato para memorizar (si te preguntan "explicá el flujo de un tool"):** decilo en este orden — *schema valida y documenta → operación habla con Octokit → tool conecta eso con el protocolo MCP → una línea en server.ts lo registra*. Los otros 8 tools siguen exactamente el mismo patrón, solo cambian los datos y el endpoint de Octokit.
+**Resumen del flujo:** schema (valida y documenta) → operación (habla con Octokit) → tool (conecta eso con el protocolo MCP) → una línea en `server.ts` (lo registra). Los otros 8 tools siguen exactamente el mismo patrón — solo cambian los datos y el endpoint de Octokit.
 
 ---
 
