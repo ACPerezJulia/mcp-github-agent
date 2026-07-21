@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isRateLimitError } from "../utils/retry.js";
 
 export class ValidationError extends Error {
   constructor(message: string) {
@@ -62,6 +63,12 @@ export function translateGitHubError(error: unknown): Error {
         "El token de GitHub no es válido o expiró. Revisá el archivo .env."
       );
     case 403:
+      if (isRateLimitError(error)) {
+        return new GitHubAPIError(
+          "GitHub limitó la cantidad de pedidos (rate limit) y se agotaron los reintentos automáticos. Esperá unos minutos e intentá de nuevo.",
+          403
+        );
+      }
       return new AuthenticationError(
         "GitHub rechazó la operación por falta de permisos. Verificá que el token tenga los scopes necesarios (repo, user, admin:org)."
       );

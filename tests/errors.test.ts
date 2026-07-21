@@ -14,6 +14,25 @@ describe("translateGitHubError", () => {
     expect(error.message).toContain("token");
   });
 
+  it("convierte un 403 genuino (sin señales de rate limit) en AuthenticationError", () => {
+    const error = translateGitHubError({
+      status: 403,
+      message: "Resource not accessible by personal access token",
+    });
+    expect(error).toBeInstanceOf(AuthenticationError);
+    expect(error.message).toContain("permisos");
+  });
+
+  it("convierte un 403 con señales de rate limit en GitHubAPIError, no en AuthenticationError", () => {
+    const error = translateGitHubError({
+      status: 403,
+      message: "You have exceeded a secondary rate limit",
+      response: { headers: { "x-ratelimit-remaining": "0" } },
+    });
+    expect(error).toBeInstanceOf(GitHubAPIError);
+    expect(error.message).toContain("rate limit");
+  });
+
   it("convierte un 404 en GitHubAPIError con mensaje claro", () => {
     const error = translateGitHubError({ status: 404, message: "Not Found" });
     expect(error).toBeInstanceOf(GitHubAPIError);

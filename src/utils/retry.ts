@@ -11,7 +11,7 @@ interface OctokitLikeError {
   response?: { headers?: Record<string, string> };
 }
 
-function isRateLimitError(error: unknown): error is OctokitLikeError {
+export function isRateLimitError(error: unknown): error is OctokitLikeError {
   if (typeof error !== "object" || error === null || !("status" in error)) {
     return false;
   }
